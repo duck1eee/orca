@@ -3,7 +3,11 @@ import {
   getExecutionHostVmStateHealth,
   type EphemeralVmHostLifecycle
 } from './execution-host-health'
-import { normalizeHostPart, toRuntimeExecutionHostId, type ExecutionHostId } from '../execution-host'
+import {
+  normalizeHostPart,
+  toRuntimeExecutionHostId,
+  type ExecutionHostId
+} from '../execution-host'
 import type { ExecutionHostRegistryEntry } from './execution-host-registry-entry'
 
 /**
