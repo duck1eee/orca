@@ -24,6 +24,7 @@ function record(
     id,
     recipeId: 'cloud',
     workspaceId: 'ws-1',
+    repoId: 'repo-1',
     status,
     cleanupStatus: 'not_started',
     createdAt: 1,
@@ -105,6 +106,11 @@ describe('ephemeral VM workspace projection', () => {
       project([record('vm-1', 'running', { recipeResult: result })])
         .ephemeralVmRuntimesByWorkspaceId['ws-1']?.canSuspend
     ).toBe(true)
+    // Main skips a VM whose repo it cannot resolve, so the menu must not offer it.
+    expect(
+      project([record('vm-1', 'running', { recipeResult: result, repoId: undefined })])
+        .ephemeralVmRuntimesByWorkspaceId['ws-1']?.canSuspend
+    ).toBe(false)
   })
 })
 

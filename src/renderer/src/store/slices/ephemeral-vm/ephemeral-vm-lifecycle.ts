@@ -75,7 +75,8 @@ export function projectEphemeralVmWorkspaceRuntimes(
       ...(record.runtimeEnvironmentId ? { runtimeEnvironmentId: record.runtimeEnvironmentId } : {}),
       ...(failure ? { failure } : {}),
       // Records without a snapshot resolve the recipe from the repo at suspend time.
-      canSuspend: !record.recipe || Boolean(record.recipe.suspend)
+      // Main only suspends a VM whose repo it can resolve (findWorkspaceEphemeralVmRuntime).
+      canSuspend: Boolean(record.repoId) && (!record.recipe || Boolean(record.recipe.suspend))
     }
   }
   return byWorkspaceId

@@ -70,7 +70,7 @@ export function VmStateTooltipBody({
 
 const iconClassName = 'size-[13px]'
 
-function VmStateIcon({ state }: { state: ExecutionHostVmState }): React.JSX.Element {
+export function VmStateIcon({ state }: { state: ExecutionHostVmState }): React.JSX.Element {
   switch (state) {
     case 'suspended':
       return <Moon className={cn(iconClassName, 'text-muted-foreground')} aria-hidden="true" />

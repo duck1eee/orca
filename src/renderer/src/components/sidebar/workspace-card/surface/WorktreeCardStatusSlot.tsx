@@ -20,7 +20,7 @@ import {
 } from '@/store/slices/ephemeral-vm/ephemeral-vm-lifecycle'
 import { selectIsSleepingWorktree } from '../../workspace-actions/sleep/use-worktree-sleep-state'
 import { getEphemeralVmHostState } from '../../../../../../shared/execution-host/execution-host-health'
-import { WorktreeCardVmStateBadge } from './WorktreeCardVmStateBadge'
+import { getVmStateLabel, VmStateIcon, WorktreeCardVmStateBadge } from './WorktreeCardVmStateBadge'
 import type { WorktreeCardPrDisplay } from '../review/worktree-card-pr-display'
 import { getReviewLabel, ReviewIcon } from '../review/worktree-review-presentation'
 import type { WorkspaceReviewChecksSummary } from '../../../../../../shared/workspace-review-checks'
@@ -243,8 +243,8 @@ export function WorktreeCardStatusSlot({
   }
 
   // A VM that is not running cannot have live activity; its lifecycle is the row's status.
-  // The classic card's unread bell still wins so it can be cleared.
-  if (vmState && showStatus && !(unreadActionEnabled && isUnread)) {
+  // The classic card's unread toggle keeps its button and shows the VM state inside it.
+  if (vmState && showStatus && !unreadActionEnabled) {
     return overlayNewCardUnreadStatus(
       <WorktreeCardVmStateBadge
         state={vmState}
@@ -263,8 +263,9 @@ export function WorktreeCardStatusSlot({
   const actionLabel = isUnread
     ? t('auto.components.sidebar.WorktreeCardStatusSlot.markAsRead', 'Mark as read')
     : t('auto.components.sidebar.WorktreeCardStatusSlot.markAsUnread', 'Mark as unread')
+  const statusTooltipLabel = vmState ? getVmStateLabel(vmState, t) : passiveStatusLabel
   const tooltip =
-    showStatus && !isUnread ? `${passiveStatusLabel} · ${unreadTooltip}` : unreadTooltip
+    showStatus && !isUnread ? `${statusTooltipLabel} · ${unreadTooltip}` : unreadTooltip
 
   return (
     <>
@@ -309,12 +310,18 @@ export function WorktreeCardStatusSlot({
               <FilledBellIcon className="size-[13px] text-amber-500 drop-shadow-sm" />
             ) : showStatus ? (
               <>
-                <StatusIndicator
-                  status={status}
-                  aria-hidden="true"
-                  showTooltip={false}
-                  className="transition-opacity group-hover/unread:opacity-0 group-focus-within/unread:opacity-0"
-                />
+                {vmState ? (
+                  <span className="inline-flex transition-opacity group-hover/unread:opacity-0 group-focus-within/unread:opacity-0">
+                    <VmStateIcon state={vmState} />
+                  </span>
+                ) : (
+                  <StatusIndicator
+                    status={status}
+                    aria-hidden="true"
+                    showTooltip={false}
+                    className="transition-opacity group-hover/unread:opacity-0 group-focus-within/unread:opacity-0"
+                  />
+                )}
                 <Bell className="absolute size-3 text-muted-foreground/40 opacity-0 transition-opacity group-hover/unread:opacity-100 group-focus-within/unread:opacity-100" />
               </>
             ) : (

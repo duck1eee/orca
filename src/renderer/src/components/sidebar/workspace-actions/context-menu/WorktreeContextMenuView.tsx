@@ -148,7 +148,11 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             <WorkspaceVmLifecycleMenuItems
               worktreeId={worktree.id}
               hasSleepableActivity={sleepableWorktrees.length > 0}
-              disabled={deletingContext}
+              disabled={
+                deletingContext ||
+                (deletingSubtree &&
+                  subtreeSleepableWorktrees.some((target) => target.id !== worktree.id))
+              }
               onSleep={handleCloseTerminals}
               hasActiveDescendants={subtreeSleepableWorktrees.some(
                 (target) => target.id !== worktree.id

@@ -53,7 +53,9 @@ export async function resumeEphemeralVmWorkspace(worktreeId: string): Promise<vo
   const resume = window.api.ephemeralVm.resumeWorkspace({ workspaceId: worktreeId })
   const store = (await import('@/store')).useAppStore
   // Every activation asks; only known VM workspaces pay for Waking state and a record re-read.
-  const isVmWorkspace = Boolean(store.getState().ephemeralVmRuntimesByWorkspaceId[worktreeId])
+  const vmStatus = store.getState().ephemeralVmRuntimesByWorkspaceId[worktreeId]?.status
+  // A running VM's activation resumes nothing, so it never reads as waking.
+  const isVmWorkspace = vmStatus === 'suspended' || vmStatus === 'resume_failed'
   if (isVmWorkspace) {
     store.getState().setEphemeralVmWorkspaceWaking(worktreeId, true)
   }

@@ -213,7 +213,7 @@ export function buildExecutionHostRegistry(args: {
     runtimeEnvironments: args.runtimeEnvironments ?? [],
     sshConnectionStates: args.sshConnectionStates
   })
-  applyEphemeralVmHostLifecycles(hosts, args.ephemeralVmHosts)
+  applyEphemeralVmHostLifecycles(hosts, args.ephemeralVmHosts, args.runtimeStatusByEnvironmentId)
 
   const overrides = args.hostLabelOverrides
   if (!overrides || overrides.size === 0) {

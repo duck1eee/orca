@@ -95,6 +95,17 @@ describe('VM lifecycle host health', () => {
     expect(host?.vmState).toBeUndefined()
   })
 
+  it('keeps a blocked server blocked, with its reason, whatever the VM record says', () => {
+    const host = registryFor('suspended', {
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the registry reads only snapshot transport/verification/blockedReason.
+      runtimeStatus: {
+        snapshot: { transport: 'ready', verification: 'blocked', blockedReason: 'access-revoked' }
+      } as unknown as RuntimeEnvironmentStatus
+    })
+    expect(host).toMatchObject({ health: 'blocked', blockedReason: 'access-revoked' })
+    expect(host?.vmState).toBeUndefined()
+  })
+
   it('ignores VM records whose server is not a registry host', () => {
     const hosts = buildExecutionHostRegistry({
       repos: [],

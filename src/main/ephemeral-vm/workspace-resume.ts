@@ -54,13 +54,11 @@ export async function resumeEphemeralVmWorkspace(
   }
   const restoreAfterFailedRecovery = (): void => {
     if (lostContact) {
-      updateEphemeralVmRuntimeStatus(userDataPath, runtime.id, {
-        status: runtime.status,
-        lifecycleLastError: null
-      })
+      // The record stays as it was; a lifecycle error only shows on a resume_failed VM.
+      updateEphemeralVmRuntimeStatus(userDataPath, runtime.id, { status: runtime.status })
     }
   }
-  // After the recipe marked the VM running, a server Orca cannot reach again is still a failed
+  // After the recipe marked the VM running, an SSH host Orca cannot reach again is still a failed
   // resume, saved with its reason so the row can explain it after a restart.
   const failAfterResume = (error: unknown): void => {
     if (lostContact) {
@@ -81,7 +79,10 @@ export async function resumeEphemeralVmWorkspace(
   })
   if (!result.ok) {
     restoreAfterFailedRecovery()
-    throw new EphemeralVmFailureError({ error: result.error, ...pickEphemeralVmFailureCode(result) })
+    throw new EphemeralVmFailureError({
+      error: result.error,
+      ...pickEphemeralVmFailureCode(result)
+    })
   }
   if (!result.runtime.recipeResult) {
     return result.runtime
@@ -89,26 +90,22 @@ export async function resumeEphemeralVmWorkspace(
   const connection = getEphemeralVmRecipeResultConnection(result.runtime.recipeResult)
   // SSH servers use their target and have no pairing to refresh.
   if (!result.skipped && connection.type !== 'ssh' && runtime.runtimeEnvironmentId) {
-    try {
-      const pairingCode = getEphemeralVmRecipeResultPairingCode(result.runtime.recipeResult)
-      if (!pairingCode) {
-        throw new Error('Resume result did not include an Orca Server pairing code.')
-      }
-      const { environment } = await applyResumedRuntimePairing({
-        userDataPath,
-        environmentId: runtime.runtimeEnvironmentId,
-        pairingCode,
-        invalidateTransport: invalidateRuntimeEnvironmentTransport
-      })
-      noteRecipeVmWakePairing(
-        environment.id,
-        environment.pairingRevision ?? environment.createdAt,
-        true
-      )
-    } catch (error) {
-      failAfterResume(error)
-      throw error
+    // A pairing failure leaves the VM running: retrying the recipe's resume on it would fail.
+    const pairingCode = getEphemeralVmRecipeResultPairingCode(result.runtime.recipeResult)
+    if (!pairingCode) {
+      throw new Error('Resume result did not include an Orca Server pairing code.')
     }
+    const { environment } = await applyResumedRuntimePairing({
+      userDataPath,
+      environmentId: runtime.runtimeEnvironmentId,
+      pairingCode,
+      invalidateTransport: invalidateRuntimeEnvironmentTransport
+    })
+    noteRecipeVmWakePairing(
+      environment.id,
+      environment.pairingRevision ?? environment.createdAt,
+      true
+    )
   }
   if (connection.type !== 'ssh' && runtime.runtimeEnvironmentId) {
     reestablishWokenServer(userDataPath, runtime.runtimeEnvironmentId)
