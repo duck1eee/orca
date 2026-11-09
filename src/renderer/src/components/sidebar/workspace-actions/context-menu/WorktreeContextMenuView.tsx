@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { WorktreeRowOpenInSubMenu } from '../open/WorktreeRowOpenInSubMenu'
 import { WorktreeDeveloperMenu } from '../open/WorktreeDeveloperMenu'
 import { WorkspaceSleepMenuItems } from '../sleep/WorkspaceSleepMenuItems'
+import { WorkspaceVmLifecycleMenuItems } from '../sleep/WorkspaceVmLifecycleMenuItems'
 import { isEventTargetInsideCurrentTarget } from '../../workspace-card/controller/worktree-card-dom-events'
 import { useTranslate } from '@/i18n/use-translate'
 import type { WorktreeContextMenuModel } from './use-worktree-context-menu-model'
@@ -139,6 +140,14 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             onSleep={handleCloseTerminals}
             onSleepSubtree={handleSleepSubtree}
           />
+          {!isMultiContext ? (
+            <WorkspaceVmLifecycleMenuItems
+              worktreeId={worktree.id}
+              hasSleepableActivity={sleepableWorktrees.length > 0}
+              disabled={deletingContext}
+              onSleep={handleCloseTerminals}
+            />
+          ) : null}
           {!isMultiContext && (
             <DropdownMenuItem onSelect={handleToggleRead} disabled={isDeleting}>
               {worktree.isUnread ? <BellOff className="size-3.5" /> : <Bell className="size-3.5" />}

@@ -1,0 +1,118 @@
+import React from 'react'
+import { Loader2, Moon, Play } from 'lucide-react'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTranslate } from '@/i18n/use-translate'
+import { useShallow } from 'zustand/react/shallow'
+import { useAppStore } from '@/store'
+import { selectEphemeralVmWorkspaceRuntime } from '@/store/slices/ephemeral-vm/ephemeral-vm-lifecycle'
+import {
+  resumeEphemeralVmWorkspace,
+  suspendEphemeralVmWorkspace
+} from '@/lib/sidebar-worktree-activation'
+import type { EphemeralVmRuntimeStatus } from '../../../../../../shared/ephemeral-vm-runtimes'
+
+export type WorkspaceVmLifecycleAction = 'suspend' | 'resume' | 'waking' | null
+
+/** Which lifecycle entry a VM-backed workspace's menu offers; null hides the entry. */
+export function getWorkspaceVmLifecycleAction(
+  status: EphemeralVmRuntimeStatus | undefined,
+  waking: boolean,
+  canSuspend = true
+): WorkspaceVmLifecycleAction {
+  if (!status) {
+    return null
+  }
+  if (waking) {
+    return 'waking'
+  }
+  switch (status) {
+    case 'running':
+    case 'suspend_failed':
+      return canSuspend ? 'suspend' : null
+    case 'suspended':
+    case 'resume_failed':
+      return 'resume'
+    case 'provisioning':
+    case 'failed':
+    case 'cleanup_pending':
+    case 'cleanup_failed':
+    case 'cleaned':
+      return null
+  }
+}
+
+/**
+ * Suspend/Resume for a workspace that owns a VM. Mounted only inside the open menu, so idle
+ * rows add no subscription. Suspending with open panels goes through Sleep, which stops them
+ * before suspending the VM.
+ */
+export function WorkspaceVmLifecycleMenuItems({
+  worktreeId,
+  hasSleepableActivity,
+  disabled,
+  onSleep
+}: {
+  worktreeId: string
+  hasSleepableActivity: boolean
+  disabled: boolean
+  onSleep: () => void
+}): React.JSX.Element | null {
+  const { status, canSuspend, waking } = useAppStore(
+    useShallow((state) => {
+      const runtime = selectEphemeralVmWorkspaceRuntime(state, worktreeId)
+      return {
+        status: runtime?.status,
+        canSuspend: runtime?.canSuspend ?? true,
+        waking: Boolean(state.wakingEphemeralVmWorkspaceIds[worktreeId])
+      }
+    })
+  )
+  const t = useTranslate()
+  const action = getWorkspaceVmLifecycleAction(status, waking, canSuspend)
+  if (action === 'waking') {
+    return (
+      <DropdownMenuItem disabled>
+        <Loader2 className="size-3.5 animate-spin" />
+        {t('workspace.vm.menu.waking', 'Waking VM…')}
+      </DropdownMenuItem>
+    )
+  }
+  if (action === 'resume') {
+    return (
+      <DropdownMenuItem
+        disabled={disabled}
+        onSelect={() => void resumeEphemeralVmWorkspace(worktreeId)}
+      >
+        <Play className="size-3.5" />
+        {status === 'resume_failed'
+          ? t('workspace.vm.menu.retryResume', 'Retry Resume VM')
+          : t('workspace.vm.menu.resume', 'Resume VM')}
+      </DropdownMenuItem>
+    )
+  }
+  if (action === 'suspend') {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() =>
+              hasSleepableActivity ? onSleep() : void suspendEphemeralVmWorkspace(worktreeId)
+            }
+          >
+            <Moon className="size-3.5" />
+            {t('workspace.vm.menu.suspend', 'Suspend VM')}
+          </DropdownMenuItem>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8} className="max-w-[220px]">
+          {t(
+            'workspace.vm.menu.suspendDescription',
+            "Close this workspace's panels and suspend its VM. Opening the workspace wakes it."
+          )}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+  return null
+}
