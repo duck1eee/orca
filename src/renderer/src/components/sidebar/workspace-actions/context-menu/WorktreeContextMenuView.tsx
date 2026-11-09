@@ -150,6 +150,10 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
               hasSleepableActivity={sleepableWorktrees.length > 0}
               disabled={deletingContext}
               onSleep={handleCloseTerminals}
+              hasActiveDescendants={subtreeSleepableWorktrees.some(
+                (target) => target.id !== worktree.id
+              )}
+              onSleepSubtree={handleSleepSubtree}
               sleepItems={sleepItems}
               replacesSleep={lineageDescendantCount === 0}
             />

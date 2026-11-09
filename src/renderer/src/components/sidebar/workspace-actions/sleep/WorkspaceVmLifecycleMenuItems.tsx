@@ -43,6 +43,22 @@ export function getWorkspaceVmLifecycleAction(
 }
 
 /**
+ * How Suspend VM reaches the VM. It never suspends under live sessions: Sleep stops them and
+ * then suspends the VM. With only children active and this workspace idle, the subtree Sleep
+ * leaves the VM up (the VM is suspended through its own workspace), so a second Suspend VM,
+ * with nothing left open, suspends it directly.
+ */
+export function getVmSuspendRoute(args: {
+  hasActiveDescendants: boolean
+  hasSleepableActivity: boolean
+}): 'sleep-subtree' | 'sleep' | 'suspend' {
+  if (args.hasActiveDescendants) {
+    return 'sleep-subtree'
+  }
+  return args.hasSleepableActivity ? 'sleep' : 'suspend'
+}
+
+/**
  * Suspend/Resume for a workspace that owns a VM, in place of its Sleep item. Sleep on a VM
  * workspace already stops its panels and then suspends the VM, so the two would be the same
  * action under two names; Suspend VM runs that Sleep, or suspends the VM directly when nothing
@@ -55,6 +71,8 @@ export function WorkspaceVmLifecycleMenuItems({
   hasSleepableActivity,
   disabled,
   onSleep,
+  hasActiveDescendants,
+  onSleepSubtree,
   sleepItems,
   replacesSleep
 }: {
@@ -62,6 +80,9 @@ export function WorkspaceVmLifecycleMenuItems({
   hasSleepableActivity: boolean
   disabled: boolean
   onSleep: () => void
+  /** A child workspace with open panels may run on this VM; suspending must sleep it first. */
+  hasActiveDescendants: boolean
+  onSleepSubtree: () => void
   sleepItems: React.ReactNode
   /** False when Sleep offers more than this workspace (its descendants), so both stay. */
   replacesSleep: boolean
@@ -88,9 +109,16 @@ export function WorkspaceVmLifecycleMenuItems({
       disabled={disabled}
       t={t}
       onResume={() => void resumeEphemeralVmWorkspace(worktreeId)}
-      onSuspend={() =>
-        hasSleepableActivity ? onSleep() : void suspendEphemeralVmWorkspace(worktreeId)
-      }
+      onSuspend={() => {
+        const route = getVmSuspendRoute({ hasActiveDescendants, hasSleepableActivity })
+        if (route === 'sleep-subtree') {
+          onSleepSubtree()
+        } else if (route === 'sleep') {
+          onSleep()
+        } else {
+          void suspendEphemeralVmWorkspace(worktreeId)
+        }
+      }}
     />
   )
   return replacesSleep ? (
