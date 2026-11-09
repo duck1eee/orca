@@ -1,5 +1,8 @@
 import { translate } from '../i18n/mobile-i18n'
-import type { MobileDictationEngineShown } from '../hooks/mobile-dictation-session-state'
+import type {
+  MobileDictationEngineShown,
+  MobileDictationKeptFailure
+} from '../hooks/mobile-dictation-session-state'
 import { MOBILE_DICTATION_CONNECTION_SLOW_ERROR_MESSAGE } from '../hooks/mobile-dictation-pending-audio-budget'
 import { phoneDictationFailedMessage } from '../hooks/mobile-dictation-device-engine'
 import { dictationFailureMessage, dictationSessionLostMessage } from './mobile-dictation-setup'
@@ -88,8 +91,8 @@ export function dictationMeterLabel(
 }
 
 // The few words a kept failure shows in the composer row; the full message is too long for it.
-export function dictationFailureReason(message: string): string {
-  if (dictationFailureMessage(message) === dictationSessionLostMessage()) {
+export function dictationFailureReason({ message, offline }: MobileDictationKeptFailure): string {
+  if (offline || dictationFailureMessage(message) === dictationSessionLostMessage()) {
     return translate('dictation.failure.connectionLost', 'Connection lost')
   }
   if (message === MOBILE_DICTATION_CONNECTION_SLOW_ERROR_MESSAGE) {

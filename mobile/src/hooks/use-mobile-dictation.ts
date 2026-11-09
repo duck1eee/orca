@@ -24,6 +24,7 @@ import {
 } from './mobile-dictation-engine-run'
 import type {
   DictationStatus,
+  MobileDictationKeptFailure,
   UseMobileDictationOptions,
   UseMobileDictationResult
 } from './mobile-dictation-session-state'
@@ -39,7 +40,7 @@ export function useMobileDictation(options: UseMobileDictationOptions): UseMobil
   const [status, setStatus] = useState<DictationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   // A failure whose recording is kept for Retry; cleared by Retry, discard and the next dictation.
-  const [failure, setFailure] = useState<{ message: string } | null>(null)
+  const [failure, setFailure] = useState<MobileDictationKeptFailure | null>(null)
   const failureRef = useRef(failure)
   const [transcriptSoFar, setTranscriptSoFar, keptTranscript] = useMobileDictationTranscriptSoFar()
   const {
@@ -89,7 +90,7 @@ export function useMobileDictation(options: UseMobileDictationOptions): UseMobil
     [clearEngine]
   )
 
-  const setKeptFailure = useCallback((next: { message: string } | null) => {
+  const setKeptFailure = useCallback((next: MobileDictationKeptFailure | null) => {
     failureRef.current = next
     setFailure(next)
   }, [])
@@ -99,7 +100,11 @@ export function useMobileDictation(options: UseMobileDictationOptions): UseMobil
       const normalized = err instanceof Error ? err : new Error(String(err))
       setError(normalized.message)
       applyStatus('error', kept)
-      setKeptFailure(kept ? { message: normalized.message } : null)
+      setKeptFailure(
+        kept
+          ? { message: normalized.message, offline: clientRef.current?.getState() !== 'connected' }
+          : null
+      )
       onErrorRef.current?.(normalized, { kept })
     },
     [applyStatus, setKeptFailure]

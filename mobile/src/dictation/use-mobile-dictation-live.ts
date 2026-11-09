@@ -22,7 +22,7 @@ export function useMobileDictationLive(
   // A workspace routed to another server transcribes there, and the phone lacks that server's name.
   const computerName = useWorkspaceExecutionHost() === undefined && hostProfile ? hostTitle : null
   const { meter, engine, failure, retry } = dictation
-  const failureReason = failure === null ? null : dictationFailureReason(failure.message)
+  const failureReason = failure === null ? null : dictationFailureReason(failure)
   return useMemo(
     () => ({
       meter,

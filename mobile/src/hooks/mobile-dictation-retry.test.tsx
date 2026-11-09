@@ -141,7 +141,7 @@ describe('a computer dictation whose finish fails', () => {
     })
     expect(inserted).toEqual([])
     expect(errors).toEqual([{ message: 'connection lost', kept: true }])
-    expect(dictation().failure).toEqual({ message: 'connection lost' })
+    expect(dictation().failure).toEqual({ message: 'connection lost', offline: false })
 
     const firstId = paramsOf(sent[0]).dictationId
     sent.length = 0

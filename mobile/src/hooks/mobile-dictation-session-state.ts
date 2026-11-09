@@ -9,6 +9,9 @@ export type DictationStatus = 'idle' | 'starting' | 'recording' | 'processing' |
 // Who is transcribing, for the icon by the timer; movedAt marks when Automatic moved from the phone to the computer.
 export type MobileDictationEngineShown = { kind: 'phone' | 'computer'; movedAt: number | null }
 
+// offline: the computer was out of reach when it failed, which is the reason the user needs.
+export type MobileDictationKeptFailure = { message: string; offline: boolean }
+
 export type UseMobileDictationOptions = {
   client: RpcClient | null
   enabled: boolean
@@ -28,7 +31,7 @@ export type UseMobileDictationResult = {
   transcriptSoFar: string
   error: string | null
   // A failure whose recording is kept: Retry plays it to the computer again, cancel discards it.
-  failure: { message: string } | null
+  failure: MobileDictationKeptFailure | null
   // Null until recording starts on an engine.
   engine: MobileDictationEngineShown | null
   start: () => Promise<void>
