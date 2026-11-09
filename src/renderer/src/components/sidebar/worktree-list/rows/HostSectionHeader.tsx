@@ -7,6 +7,7 @@ import type { HostHeaderRow } from '../../../../../../shared/sidebar-list/host-s
 import { HostSectionHeaderMenu } from './HostSectionHeaderMenu'
 import { stopRepoHeaderMenuEvent } from './header-event-guards'
 import { getHostHeaderDetail } from './host-header-detail'
+import { getVmStateLabel } from '../../workspace-card/surface/WorktreeCardVmStateBadge'
 
 function SectionMetricsBadge({ count }: { count: number }): React.JSX.Element {
   const t = useTranslate()
@@ -41,13 +42,67 @@ function HostHeaderHealthIcon({
   health: HostHeaderRow['health']
 }): React.JSX.Element | null {
   // Why: only surface states needing attention; healthy is the silent default.
-  if (health === 'connecting' || health === 'waking' || health === 'provisioning') {
+  if (health === 'connecting') {
     return <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
   }
   if (health === 'blocked' || health === 'error') {
     return <AlertTriangle className="size-3 shrink-0 text-destructive" />
   }
   return null
+}
+
+const vmBadgeIconClassName = 'size-2'
+
+function VmStateBadgeIcon({
+  state
+}: {
+  state: NonNullable<HostHeaderRow['vmState']>
+}): React.JSX.Element {
+  switch (state) {
+    case 'suspended':
+      return <Moon className={cn(vmBadgeIconClassName, 'text-muted-foreground')} />
+    case 'provisioning':
+    case 'waking':
+      return <Loader2 className={cn(vmBadgeIconClassName, 'animate-spin text-muted-foreground')} />
+    case 'resume_failed':
+    case 'provision_failed':
+      return <AlertTriangle className={cn(vmBadgeIconClassName, 'text-destructive')} />
+  }
+}
+
+/** A VM host's server glyph with its lifecycle as a corner badge, like an avatar's status dot. */
+function VmHostIcon({
+  state,
+  muted
+}: {
+  state: NonNullable<HostHeaderRow['vmState']>
+  muted: boolean
+}): React.JSX.Element {
+  const t = useTranslate()
+  const label = getVmStateLabel(state, t)
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className="relative inline-flex size-3.5 shrink-0"
+          data-host-header-vm-state={state}
+          aria-label={label}
+          role="img"
+        >
+          <Server
+            className={cn('size-3.5', muted ? 'text-muted-foreground/80' : 'text-muted-foreground')}
+          />
+          {/* The ring in the sidebar color cuts the badge out of the glyph so it reads at 8px. */}
+          <span className="absolute -right-1 -bottom-1 inline-flex size-2.5 items-center justify-center rounded-full bg-worktree-sidebar ring-1 ring-worktree-sidebar">
+            <VmStateBadgeIcon state={state} />
+          </span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 export function HostSectionHeader({
@@ -94,17 +149,14 @@ export function HostSectionHeader({
           }
         }}
       >
-        {isSuspended ? (
-          <Moon
-            className="size-3.5 shrink-0 text-muted-foreground/80"
-            data-host-header-vm-state="suspended"
-          />
+        {row.vmState ? (
+          <VmHostIcon state={row.vmState} muted={isSuspended} />
         ) : isDisconnected ? (
           <ServerOff className="size-3.5 shrink-0 text-muted-foreground/80" />
         ) : (
           <Server className="size-3.5 shrink-0 text-muted-foreground" />
         )}
-        <HostHeaderHealthIcon health={row.health} />
+        {row.vmState ? null : <HostHeaderHealthIcon health={row.health} />}
         {/* Why: badge hugs the label (like repo headers) instead of floating by the hover controls. */}
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <span
