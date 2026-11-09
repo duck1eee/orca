@@ -13,7 +13,8 @@ export type UseMobileDictationOptions = {
   client: RpcClient | null
   enabled: boolean
   onTranscript: (text: string) => void
-  onError?: (error: Error) => void
+  // kept: the recording is kept for Retry, so the failure shows in place rather than as a toast.
+  onError?: (error: Error, outcome: { kept: boolean }) => void
   // The computer's filler switch, for text the phone recognizes itself; unknown means on.
   removeFillerWords?: boolean
 }
@@ -26,10 +27,13 @@ export type UseMobileDictationResult = {
   // Empty until a newer host reports words; older hosts never do.
   transcriptSoFar: string
   error: string | null
+  // A failure whose recording is kept: Retry plays it to the computer again, cancel discards it.
+  failure: { message: string } | null
   // Null until recording starts on an engine.
   engine: MobileDictationEngineShown | null
   start: () => Promise<void>
   stop: () => Promise<void>
+  retry: () => Promise<void>
   cancel: () => Promise<void>
   meter: MobileDictationMeter
 }
