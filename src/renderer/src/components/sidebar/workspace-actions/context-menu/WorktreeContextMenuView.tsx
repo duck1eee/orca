@@ -71,6 +71,17 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
     workspaceStatuses
   } = model
   const t = useTranslate()
+  const sleepItems = (
+    <WorkspaceSleepMenuItems
+      isMultiContext={isMultiContext}
+      sleepLabel={sleepLabel}
+      sleepDisabled={deletingContext || sleepableWorktrees.length === 0}
+      descendantCount={lineageDescendantCount}
+      subtreeSleepDisabled={deletingSubtree || subtreeSleepableWorktrees.length === 0}
+      onSleep={handleCloseTerminals}
+      onSleepSubtree={handleSleepSubtree}
+    />
+  )
   return (
     <div
       ref={scopeRef}
@@ -131,23 +142,18 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             </span>
           </DropdownMenuLabel>
           {!isMultiContext && <WorktreeWslHostStartMenuItem worktreeId={worktree.id} />}
-          <WorkspaceSleepMenuItems
-            isMultiContext={isMultiContext}
-            sleepLabel={sleepLabel}
-            sleepDisabled={deletingContext || sleepableWorktrees.length === 0}
-            descendantCount={lineageDescendantCount}
-            subtreeSleepDisabled={deletingSubtree || subtreeSleepableWorktrees.length === 0}
-            onSleep={handleCloseTerminals}
-            onSleepSubtree={handleSleepSubtree}
-          />
-          {!isMultiContext ? (
+          {isMultiContext ? (
+            sleepItems
+          ) : (
             <WorkspaceVmLifecycleMenuItems
               worktreeId={worktree.id}
               hasSleepableActivity={sleepableWorktrees.length > 0}
               disabled={deletingContext}
               onSleep={handleCloseTerminals}
+              sleepItems={sleepItems}
+              replacesSleep={lineageDescendantCount === 0}
             />
-          ) : null}
+          )}
           {!isMultiContext && (
             <DropdownMenuItem onSelect={handleToggleRead} disabled={isDeleting}>
               {worktree.isUnread ? <BellOff className="size-3.5" /> : <Bell className="size-3.5" />}
